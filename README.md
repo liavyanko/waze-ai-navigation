@@ -2,6 +2,8 @@
 
 A sophisticated Streamlit-based navigation application with intelligent traffic prediction and route optimization. This project simulates the core functionality of navigation systems like Waze, providing intelligent estimates of travel times based on various real-world conditions.
 
+Live Demo: https://wazeaiproject.streamlit.app/?slat=32.0852997&slon=34.7818064&elat=32.1309209&elon=34.9919607
+
 ## 🎯 **Current Status: PRODUCTION READY!**
 
 The app now features a **complete Waze-like UI** with full functionality:
