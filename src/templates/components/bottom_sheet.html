@@ -1,0 +1,22 @@
+{% if eta_minutes %}
+<div class="bottom-sheet compact">
+    <div class="sheet-content">
+        <div class="eta-section">
+            <div class="eta-main">
+                <span class="eta-time">{{ eta_display }}</span>
+                <span class="eta-label">ETA</span>
+            </div>
+            <div class="traffic-indicator">
+                <span class="traffic-multiplier">{{ "%.1f"|format(multiplier) }}x</span>
+                <span class="traffic-label">Traffic</span>
+            </div>
+        </div>
+        <div class="route-info">
+            <div class="route-tags">
+                <span class="route-tag">Route A</span>
+                <span class="route-tag">Live</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}

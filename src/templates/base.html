@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚗 Waze AI Navigation</title>
+    <link rel="stylesheet" href="/static/css/uiux.css">
+</head>
+<body>
+    <!-- Floating Search Bar -->
+    {{ search_bar | safe }}
+    
+    <!-- Main Content Area -->
+    <div style="position: relative; height: calc(100vh - 120px);">
+        {{ main_content | safe }}
+    </div>
+    
+    <!-- Floating Action Buttons -->
+    {{ floating_buttons | safe }}
+    
+    <!-- Bottom Sheet -->
+    {{ bottom_sheet | safe }}
+    
+    <!-- Error Messages -->
+    {{ error_messages | safe }}
+    
+    <!-- JavaScript -->
+    <script src="/static/js/interactions.js"></script>
+</body>
+</html>

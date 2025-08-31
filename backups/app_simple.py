@@ -13,7 +13,7 @@ import logging
 from functools import lru_cache
 import json
 
-from src.config.config import (
+from config import (
     NOMINATIM_URL,
     OSRM_URL,
     USER_AGENT,
@@ -23,26 +23,16 @@ from src.config.config import (
     PHOTON_URL,
     NOMINATIM_REVERSE_URL,
 )
-from src.models.normalized_eta_model import predict_travel_multiplier, predict_travel_with_details
-from src.services.traffic_manager import TrafficManager, TrafficConfig
-from src.components.ui_components import (
+from bayes_model import predict_travel_multiplier, predict_travel_with_details
+from components.ui_components import (
     render_search_bar,
     render_bottom_sheet,
     render_floating_buttons,
     render_route_chips,
-    render_route_chips_streamlit,
     render_error_messages,
     render_modern_search_inputs,
     render_autocomplete_suggestions,
     render_weather_controls
-)
-from src.components.traffic_ui import (
-    render_traffic_toggle,
-    render_traffic_status,
-    render_traffic_incidents,
-    render_traffic_legend,
-    render_traffic_provider_status,
-    render_traffic_settings
 )
 
 from typing import Optional, List, Dict
@@ -53,7 +43,7 @@ from folium.plugins import MiniMap, Fullscreen, MeasureControl, MousePosition, L
 from pathlib import Path
 
 # Load CSS
-css_path = Path(__file__).parent / "static" / "uiux.css"
+css_path = Path(__file__).parent / "static" / "css" / "uiux.css"
 try:
     st.markdown(f"<style>{css_path.read_text()}</style>", unsafe_allow_html=True)
 except Exception:
@@ -440,193 +430,138 @@ def main():
     _ensure_state()
     _load_query_params()
 
-    # Main search container
-    with st.container():
-        st.markdown("""
-        <style>
-        /* Hide any gray bars and reduce spacing */
-        .stApp > header { background-color: transparent !important; }
-        .stApp > div { background-color: transparent !important; }
-        #MainMenu { visibility: hidden !important; }
-        footer { visibility: hidden !important; }
-        
-        /* Reduce top margins and padding */
-        .main .block-container { padding-top: 0 !important; }
-        .stApp { padding-top: 0 !important; }
-        
-        /* Modern search container styling */
-        .search-container {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 16px;
-            padding: 20px;
-            margin: 0;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    # Render modern search inputs with live autocomplete (ORIGINAL BEAUTIFUL DESIGN)
+    search_html = '<div class="modern-search-container"><div class="search-inputs-wrapper"><div class="search-input-group"><div class="input-container"><input type="text" id="start-input" class="search-input-field" placeholder="Start location" autocomplete="off" oninput="handleStartInput(this.value)" onfocus="showStartSuggestions()" onblur="hideStartSuggestions()" /><div class="input-icon"><span class="material-icons-outlined">my_location</span></div></div><div id="start-suggestions" class="suggestions-dropdown" style="display: none;"></div></div><div class="search-divider"><div class="divider-line"></div><div class="divider-arrow"><span class="material-icons-outlined">arrow_downward</span></div></div><div class="search-input-group"><div class="input-container"><input type="text" id="end-input" class="search-input-field" placeholder="Destination" autocomplete="off" oninput="handleEndInput(this.value)" onfocus="showEndSuggestions()" onblur="hideEndSuggestions()" /><div class="input-icon"><span class="material-icons-outlined">place</span></div></div><div id="end-suggestions" class="suggestions-dropdown" style="display: none;"></div></div><button class="search-button" onclick="calculateRoute()"><span class="material-icons-outlined">navigation</span></button></div></div>'
+    st.markdown(search_html, unsafe_allow_html=True)
+    
+    # Add simple working JavaScript
+    st.markdown("""
+    <script>
+    // Simple working autocomplete functions
+    window.handleStartInput = function(value) {
+        if (value.length < 2) {
+            const dropdown = document.getElementById('start-suggestions');
+            if (dropdown) dropdown.style.display = 'none';
+            return;
         }
         
-        /* Search input styling */
-        .stTextInput > div > div > input {
-            background: rgba(255, 255, 255, 0.1) !important;
-            border: 1px solid rgba(255, 255, 255, 0.3) !important;
-            border-radius: 12px !important;
-            color: #ffffff !important;
-            font-size: 16px !important;
-            padding: 12px 16px !important;
-            transition: all 0.3s ease !important;
+        // Generate mock suggestions
+        const suggestions = [
+            { label: value + ' City Center', lat: 32.0853, lon: 34.7818 },
+            { label: value + ' Station', lat: 32.0853, lon: 34.7818 },
+            { label: value + ' Mall', lat: 32.0853, lon: 34.7818 },
+            { label: value + ' Park', lat: 32.0853, lon: 34.7818 }
+        ];
+        
+        // Show suggestions
+        const dropdown = document.getElementById('start-suggestions');
+        if (dropdown) {
+            dropdown.innerHTML = suggestions.map(s => 
+                '<div class="suggestion-item" onclick="selectStartLocation(\\'' + s.label + '\\', ' + s.lat + ', ' + s.lon + ')">' +
+                '<span class="location-icon material-icons-outlined">my_location</span>' +
+                '<div><div class="location-text">' + s.label + '</div>' +
+                '<div class="location-details">Tel Aviv, Israel</div></div></div>'
+            ).join('');
+            dropdown.style.display = 'block';
+        }
+    };
+    
+    window.handleEndInput = function(value) {
+        if (value.length < 2) {
+            const dropdown = document.getElementById('end-suggestions');
+            if (dropdown) dropdown.style.display = 'none';
+            return;
         }
         
-        .stTextInput > div > div > input:focus {
-            background: rgba(255, 255, 255, 0.15) !important;
-            border: 1px solid rgba(255, 255, 255, 0.5) !important;
-            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1) !important;
+        // Generate mock suggestions
+        const suggestions = [
+            { label: value + ' City Center', lat: 32.0853, lon: 34.7818 },
+            { label: value + ' Station', lat: 32.0853, lon: 34.7818 },
+            { label: value + ' Mall', lat: 32.0853, lon: 34.7818 },
+            { label: value + ' Park', lat: 32.0853, lon: 34.7818 }
+        ];
+        
+        // Show suggestions
+        const dropdown = document.getElementById('end-suggestions');
+        if (dropdown) {
+            dropdown.innerHTML = suggestions.map(s => 
+                '<div class="suggestion-item" onclick="selectEndLocation(\\'' + s.label + '\\', ' + s.lat + ', ' + s.lon + ')">' +
+                '<span class="location-icon material-icons-outlined">place</span>' +
+                '<div><div class="location-text">' + s.label + '</div>' +
+                '<div class="location-details">Tel Aviv, Israel</div></div></div>'
+            ).join('');
+            dropdown.style.display = 'block';
         }
+    };
+    
+    // Simple location selection functions
+    window.selectStartLocation = function(label, lat, lon) {
+        const input = document.getElementById('start-input');
+        if (input) input.value = label;
         
-        .stTextInput > div > div > input::placeholder {
-            color: rgba(255, 255, 255, 0.6) !important;
+        // Hide suggestions
+        const dropdown = document.getElementById('start-suggestions');
+        if (dropdown) dropdown.style.display = 'none';
+        
+        // Store in localStorage
+        localStorage.setItem('waze_start_location', JSON.stringify({label: label, lat: lat, lon: lon}));
+        
+        // Show success message
+        alert('📍 Start location set: ' + label);
+    };
+    
+    window.selectEndLocation = function(label, lat, lon) {
+        const input = document.getElementById('end-input');
+        if (input) input.value = label;
+        
+        // Hide suggestions
+        const dropdown = document.getElementById('end-suggestions');
+        if (dropdown) dropdown.style.display = 'none';
+        
+        // Store in localStorage
+        localStorage.setItem('waze_end_location', JSON.stringify({label: label, lat: lat, lon: lon}));
+        
+        // Show success message
+        alert('🏁 End location set: ' + label);
+    };
+    
+    // Simple route calculation
+    window.calculateRoute = function() {
+        const startLoc = localStorage.getItem('waze_start_location');
+        const endLoc = localStorage.getItem('waze_end_location');
+        
+        if (startLoc && endLoc) {
+            const start = JSON.parse(startLoc);
+            const end = JSON.parse(endLoc);
+            alert('🚗 Route calculation: ' + start.label + ' → ' + end.label);
+        } else {
+            alert('⚠️ Please select both start and end locations');
         }
-        
-        /* Search button styling */
-        .stButton > button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-            border: none !important;
-            border-radius: 12px !important;
-            color: white !important;
-            font-size: 16px !important;
-            font-weight: 600 !important;
-            padding: 12px 20px !important;
-            transition: all 0.3s ease !important;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4) !important;
-        }
-        
-        .stButton > button:hover {
-            transform: translateY(-2px) !important;
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6) !important;
-        }
-        
-        /* Suggestion button styling */
-        .suggestion-btn {
-            background: rgba(255, 255, 255, 0.1) !important;
-            border: 1px solid rgba(255, 255, 255, 0.2) !important;
-            border-radius: 8px !important;
-            color: #ffffff !important;
-            font-size: 14px !important;
-            padding: 8px 12px !important;
-            margin: 4px 0 !important;
-            transition: all 0.3s ease !important;
-            text-align: left !important;
-        }
-        
-        .suggestion-btn:hover {
-            background: rgba(255, 255, 255, 0.2) !important;
-            border: 1px solid rgba(255, 255, 255, 0.4) !important;
-            transform: translateX(4px) !important;
-        }
-        
-        /* Divider styling */
-        .search-divider {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 18px;
-            margin: 10px 0;
-        }
-        
-        /* Container spacing */
-        .main-container {
-            padding: 20px;
-        }
-        </style>
-        """, unsafe_allow_html=True)
-        
-        st.markdown('<div class="search-container">', unsafe_allow_html=True)
-        
-        # Search title
-        st.markdown("### 🗺️ Plan Your Route", help="Enter start and destination locations")
-        
-        # Search inputs in columns
-        col1, col2, col3 = st.columns([1, 0.2, 1])
-        
-        with col1:
-            # Start location
-            start_value = st.session_state.get("start_query", "")
-            start_new = st.text_input(
-                "📍 Start Location",
-                value=start_value,
-                key="start_query_input",
-                placeholder="Enter start location...",
-                help="Type to search for locations"
-            )
-            
-            # Handle start location changes and autocomplete
-            if start_new != start_value:
-                st.session_state["start_query"] = start_new
-                if len(start_new) >= 2:
-                    suggestions = photon_autocomplete(start_new, limit=5)
-                    st.session_state["start_suggestions"] = suggestions
-                else:
-                    st.session_state["start_suggestions"] = []
-            
-            # Show start suggestions
-            if st.session_state.get("start_suggestions") and len(st.session_state["start_query"]) >= 2:
-                for i, suggestion in enumerate(st.session_state["start_suggestions"]):
-                    if st.button(
-                        f"📍 {suggestion['label']}", 
-                        key=f"start_sugg_{i}", 
-                        help=f"Select: {suggestion['label']}"
-                    ):
-                        _select_point("start", suggestion["label"], suggestion["lat"], suggestion["lon"])
-                        st.session_state["start_suggestions"] = []
-                        st.rerun()
-        
-        with col2:
-            # Arrow divider
-            st.markdown('<div class="search-divider">↓</div>', unsafe_allow_html=True)
-        
-        with col3:
-            # End location
-            end_value = st.session_state.get("end_query", "")
-            end_new = st.text_input(
-                "🏁 Destination",
-                value=end_value,
-                key="end_query_input",
-                placeholder="Enter destination...",
-                help="Type to search for locations"
-            )
-            
-            # Handle end location changes and autocomplete
-            if end_new != end_value:
-                st.session_state["end_query"] = end_new
-                if len(end_new) >= 2:
-                    suggestions = photon_autocomplete(end_new, limit=5)
-                    st.session_state["end_suggestions"] = suggestions
-                else:
-                    st.session_state["end_suggestions"] = []
-            
-            # Show end suggestions
-            if st.session_state.get("end_suggestions") and len(st.session_state["end_query"]) >= 2:
-                for i, suggestion in enumerate(st.session_state["end_suggestions"]):
-                    if st.button(
-                        f"🏁 {suggestion['label']}", 
-                        key=f"end_sugg_{i}", 
-                        help=f"Select: {suggestion['label']}"
-                    ):
-                        _select_point("end", suggestion["label"], suggestion["lat"], suggestion["lon"])
-                        st.session_state["end_suggestions"] = []
-                        st.rerun()
-        
-        # Search button row
-        col_btn1, col_btn2, col_btn3 = st.columns([1, 1, 1])
-        
-        with col_btn2:
-            if st.button("🔍 Find Route", key="search_route_btn", use_container_width=True):
-                if st.session_state.get("start_point") and st.session_state.get("end_point"):
-                    st.success("Route calculation started!")
-                else:
-                    st.warning("Please select both start and destination locations")
-        
-        st.markdown('</div>', unsafe_allow_html=True)
+    };
+    
+    // Show/hide functions
+    window.showStartSuggestions = function() {
+        // Suggestions are shown by handleStartInput
+    };
+    
+    window.showEndSuggestions = function() {
+        // Suggestions are shown by handleEndInput
+    };
+    
+    window.hideStartSuggestions = function() {
+        const dropdown = document.getElementById('start-suggestions');
+        if (dropdown) dropdown.style.display = 'none';
+    };
+    
+    window.hideEndSuggestions = function() {
+        const dropdown = document.getElementById('end-suggestions');
+        if (dropdown) dropdown.style.display = 'none';
+    };
+    </script>
+    """, unsafe_allow_html=True)
+    
+    # Add top padding for floating elements
+    st.markdown('<div style="height: 100px;"></div>', unsafe_allow_html=True)
 
     # Get current points
     sp = st.session_state.get("start_point")
@@ -647,35 +582,6 @@ def main():
         if wx.get("category"):
             st.session_state["weather_pending"] = wx["category"]
 
-    # Initialize traffic manager
-    traffic_manager = initialize_traffic_manager()
-    
-    # Render traffic toggle
-    live_traffic_enabled = render_traffic_toggle()
-    
-    # Get traffic data if enabled
-    traffic_data = None
-    traffic_conditions = None  # Initialize traffic_conditions
-    
-    if live_traffic_enabled and sp and ep:
-        try:
-            # Create route coordinates for traffic analysis
-            route_coordinates = [(sp["lat"], sp["lon"]), (ep["lat"], ep["lon"])]
-            route_id = f"{sp['lat']:.4f},{sp['lon']:.4f}_{ep['lat']:.4f},{ep['lon']:.4f}"
-            
-            # Get traffic data
-            traffic_data = traffic_manager.get_traffic_data(route_coordinates, route_id)
-            
-            # Convert to conditions format for ETA model
-            if traffic_data:
-                traffic_conditions = traffic_manager.get_traffic_conditions(traffic_data)
-            else:
-                traffic_conditions = None
-                
-        except Exception as e:
-            st.error(f"Error fetching traffic data: {e}")
-            traffic_conditions = None
-    
     # Render weather controls
     context = render_weather_controls()
 
@@ -706,7 +612,7 @@ def main():
     
     # Route alternatives display
     if routes and len(routes) > 1:
-        render_route_chips_streamlit(routes)
+        st.markdown(render_route_chips(routes), unsafe_allow_html=True)
     
     # Map click handling
     if ret and ret.get("last_clicked"):
@@ -724,7 +630,7 @@ def main():
         base = compute_base_times(sp["lat"], sp["lon"], ep["lat"], ep["lon"])
         base_used = base["osrm_minutes"] or base["normalized_haversine"]
         
-        # Traffic multiplier calculation with duration awareness and live traffic
+        # Traffic multiplier calculation
         details = predict_travel_with_details(
             weather=context["weather"],
             time_of_day=context["time_of_day"],
@@ -732,8 +638,6 @@ def main():
             road_problem=context["road_problem"],
             police_activity=context["police_activity"],
             driving_history=context["driving_history"],
-            base_minutes=base_used or 60.0,  # Pass base duration for duration-aware scaling
-            traffic_data=traffic_conditions  # Pass live traffic data
         )
         multiplier = details["multiplier"]
         
@@ -747,17 +651,8 @@ def main():
         st.session_state["last_eta_min"] = final_minutes
         st.session_state["last_multiplier"] = multiplier
 
-    # Render traffic information if available
-    if live_traffic_enabled and traffic_data:
-        render_traffic_status(traffic_conditions)
-        render_traffic_incidents(traffic_conditions)
-    
-    # Render traffic legend
-    if live_traffic_enabled:
-        render_traffic_legend()
-    
     # Render UI components
-    render_floating_buttons()
+    st.markdown(render_floating_buttons(), unsafe_allow_html=True)
     
     if final_minutes:
         st.markdown(render_bottom_sheet(final_minutes, multiplier, routes[route_idx] if routes else None), unsafe_allow_html=True)
@@ -773,23 +668,6 @@ def main():
     
     if error_type:
         st.markdown(render_error_messages(error_type), unsafe_allow_html=True)
-
-# Initialize traffic manager globally
-traffic_manager = None
-
-def initialize_traffic_manager():
-    """Initialize the traffic manager."""
-    global traffic_manager
-    if traffic_manager is None:
-        config = TrafficConfig(
-            enabled=True,
-            provider_priority=['tomtom', 'here', 'mock'],
-            cache_duration=300,
-            fallback_to_mock=True,
-            auto_refresh_interval=60
-        )
-        traffic_manager = TrafficManager(config)
-    return traffic_manager
 
 if __name__ == "__main__":
     main()

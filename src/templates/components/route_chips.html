@@ -1,0 +1,10 @@
+{% if routes %}
+<div class="route-chips">
+    {% for route in routes %}
+    <div class="route-chip" onclick="selectRoute({{ loop.index0 }})">
+        <strong>Route {{ route_letters[loop.index0] }}</strong><br>
+        <small>{{ "%.0f"|format(route.minutes) }} min • {{ "%.1f"|format(route.km) }} km</small>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}

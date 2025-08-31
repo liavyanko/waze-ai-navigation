@@ -1,0 +1,732 @@
+
+/* uiux.css — Modern Waze-like UI/UX for Streamlit + Folium
+   Complete redesign with dark theme, glassmorphism, and smooth animations
+   Author: UI/UX Product Engineer
+*/
+
+/* Fonts & Icons */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Roboto:wght@300;400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons+Outlined');
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+
+/* Global Reset & Base */
+* {
+  box-sizing: border-box;
+}
+
+html, body, .stApp { 
+  direction: ltr; 
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* Modern Waze Color Palette */
+:root {
+  /* Primary Colors */
+  --waze-blue: #1daeff;
+  --waze-blue-dark: #0b3147;
+  --waze-blue-light: #4bc8ff;
+  
+  /* Background Colors */
+  --bg-primary: #0a0e1a;
+  --bg-secondary: #0f1629;
+  --bg-tertiary: #1a2332;
+  --bg-surface: rgba(15, 22, 41, 0.95);
+  --bg-glass: rgba(15, 22, 41, 0.85);
+  
+  /* Text Colors */
+  --text-primary: #ffffff;
+  --text-secondary: #b8c5d1;
+  --text-muted: #7a8a9a;
+  --text-accent: #1daeff;
+  
+  /* Status Colors */
+  --success: #00d4aa;
+  --warning: #ffb800;
+  --error: #ff4757;
+  --info: #3742fa;
+  
+  /* Interactive Elements */
+  --button-primary: #1daeff;
+  --button-secondary: rgba(255, 255, 255, 0.1);
+  --button-hover: rgba(29, 174, 255, 0.1);
+  --chip-bg: rgba(29, 174, 255, 0.15);
+  --chip-border: rgba(29, 174, 255, 0.3);
+  
+  /* Shadows & Effects */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.15);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.35);
+  --shadow-xl: 0 16px 64px rgba(0, 0, 0, 0.45);
+  --glow: 0 0 20px rgba(29, 174, 255, 0.3);
+  
+  /* Border Radius */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
+  
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 20px;
+  --space-2xl: 24px;
+  --space-3xl: 32px;
+  
+  /* Transitions */
+  --transition-fast: 0.15s ease-out;
+  --transition-normal: 0.25s ease-out;
+  --transition-slow: 0.35s ease-out;
+}
+
+/* ---------- Global Typography & Base Styles ---------- */
+html, body, .stApp {
+  font-family: 'Inter', 'Roboto', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Hide Streamlit's default elements */
+#MainMenu { visibility: hidden; }
+footer { visibility: hidden; }
+header { visibility: hidden; }
+
+/* Main container styling */
+.main .block-container {
+  padding: 0 !important;
+  max-width: 100% !important;
+}
+
+/* Global text styling */
+.stMarkdown, .stTextInput, .stSelectbox, .stButton, .stRadio, .stMetric, .stDataFrame {
+  color: var(--text-primary);
+}
+
+a { 
+  color: var(--waze-blue);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+a:hover {
+  color: var(--waze-blue-light);
+}
+
+small, .caption, .stCaption { 
+  color: var(--text-muted) !important; 
+}
+
+/* Remove default Streamlit styling */
+.stApp > header {
+  background-color: transparent;
+}
+
+.stApp > div {
+  background-color: transparent;
+}
+
+/* ---------- Floating Top Search Bar ---------- */
+.floating-search-bar {
+  position: fixed;
+  top: var(--space-lg);
+  left: var(--space-lg);
+  right: var(--space-lg);
+  z-index: 1000;
+  background: var(--bg-glass);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-2xl);
+  padding: var(--space-md);
+  box-shadow: var(--shadow-xl);
+  transition: all var(--transition-normal);
+}
+
+.floating-search-bar:hover {
+  box-shadow: var(--shadow-xl), var(--glow);
+  border-color: rgba(29, 174, 255, 0.3);
+}
+
+.search-inputs {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr auto;
+  gap: var(--space-md);
+  align-items: center;
+}
+
+.search-input {
+  position: relative;
+  flex: 1;
+}
+
+.search-input input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md) var(--space-lg);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  transition: all var(--transition-fast);
+}
+
+.search-input input:focus {
+  outline: none;
+  border-color: var(--waze-blue);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 3px rgba(29, 174, 255, 0.1);
+}
+
+.search-input input::placeholder {
+  color: var(--text-muted);
+}
+
+.search-divider {
+  width: 1px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 0 var(--space-sm);
+}
+
+.search-actions {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+}
+
+/* ---------- Modern Chips & Tags ---------- */
+.chips {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  background: var(--chip-bg);
+  color: var(--text-primary);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-full);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  border: 1px solid var(--chip-border);
+  backdrop-filter: blur(10px);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+
+.chip:hover {
+  background: rgba(29, 174, 255, 0.25);
+  border-color: var(--waze-blue);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.chip.selected {
+  background: var(--waze-blue);
+  color: var(--waze-blue-dark);
+  border-color: var(--waze-blue);
+  box-shadow: var(--glow);
+}
+
+.chip .material-icons-outlined {
+  font-size: 16px;
+  opacity: 0.9;
+}
+
+/* Route Selection Chips */
+.route-chip {
+  padding: var(--space-md) var(--space-lg);
+  border-radius: var(--radius-lg);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.route-chip::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left var(--transition-slow);
+}
+
+.route-chip:hover::before {
+  left: 100%;
+}
+
+.route-chip:hover {
+  background: var(--bg-tertiary);
+  border-color: var(--waze-blue);
+  color: var(--text-primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.route-chip.selected {
+  background: var(--waze-blue);
+  color: var(--waze-blue-dark);
+  border-color: var(--waze-blue);
+  box-shadow: var(--glow);
+}
+
+/* ---------- Bottom Sheet (Trip Summary) ---------- */
+.bottom-sheet {
+  position: fixed;
+  left: var(--space-lg);
+  right: var(--space-lg);
+  bottom: var(--space-lg);
+  background: var(--bg-glass);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-2xl);
+  padding: var(--space-xl);
+  z-index: 1000;
+  box-shadow: var(--shadow-xl);
+  transition: all var(--transition-normal);
+}
+
+.bottom-sheet:hover {
+  box-shadow: var(--shadow-xl), var(--glow);
+  border-color: rgba(29, 174, 255, 0.2);
+}
+
+.bottom-sheet .header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-lg);
+}
+
+.bottom-sheet .title {
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.bottom-sheet .subtitle {
+  font-weight: 400;
+  font-size: 14px;
+  color: var(--text-muted);
+  margin: var(--space-xs) 0 0 0;
+}
+
+.bottom-sheet .content {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-xl);
+  align-items: center;
+}
+
+.bottom-sheet .trip-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.bottom-sheet .eta-display {
+  text-align: right;
+}
+
+.bottom-sheet .eta-time {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--waze-blue);
+  line-height: 1;
+  margin: 0;
+}
+
+.bottom-sheet .eta-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: var(--space-xs) 0 0 0;
+}
+
+.bottom-sheet .tags {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  margin-top: var(--space-md);
+}
+
+.tag {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-secondary);
+  padding: var(--space-xs) var(--space-md);
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all var(--transition-fast);
+}
+
+.tag:hover {
+  background: rgba(29, 174, 255, 0.15);
+  border-color: var(--waze-blue);
+  color: var(--text-primary);
+}
+
+/* ---------- Floating Action Buttons (FABs) ---------- */
+.fabs {
+  position: fixed;
+  right: var(--space-xl);
+  bottom: 140px;
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.fab {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-glass);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: var(--shadow-lg);
+  color: var(--text-primary);
+  font-size: 24px;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.fab::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), transparent);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.fab:hover::before {
+  opacity: 1;
+}
+
+.fab:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: var(--shadow-xl), var(--glow);
+  border-color: var(--waze-blue);
+}
+
+.fab:active {
+  transform: translateY(0) scale(0.95);
+}
+
+.fab.primary {
+  background: var(--waze-blue);
+  color: var(--waze-blue-dark);
+  box-shadow: var(--shadow-lg), var(--glow);
+}
+
+.fab.primary:hover {
+  background: var(--waze-blue-light);
+  box-shadow: var(--shadow-xl), 0 0 30px rgba(29, 174, 255, 0.5);
+}
+
+.fab .material-icons-outlined {
+  font-size: 28px;
+  transition: transform var(--transition-fast);
+}
+
+.fab:hover .material-icons-outlined {
+  transform: scale(1.1);
+}
+
+/* FAB Tooltips */
+.fab-tooltip {
+  position: absolute;
+  right: 70px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-fast);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: var(--shadow-md);
+}
+
+.fab:hover .fab-tooltip {
+  opacity: 1;
+}
+
+/* ---------- Autocomplete Suggestions ---------- */
+.suggestion-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: var(--space-xs);
+  background: var(--bg-glass);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-xl);
+  z-index: 1000;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all var(--transition-fast);
+  color: var(--text-primary);
+}
+
+.suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.suggestion-item:hover {
+  background: rgba(29, 174, 255, 0.1);
+  color: var(--waze-blue);
+}
+
+.suggestion-item .icon {
+  color: var(--text-muted);
+  font-size: 18px;
+}
+
+.suggestion-item:hover .icon {
+  color: var(--waze-blue);
+}
+
+/* ---------- Modern Buttons ---------- */
+.modern-button {
+  background: var(--waze-blue);
+  color: var(--waze-blue-dark);
+  border: none;
+  border-radius: var(--radius-lg);
+  padding: var(--space-md) var(--space-xl);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-shadow: var(--shadow-md);
+  position: relative;
+  overflow: hidden;
+}
+
+.modern-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left var(--transition-slow);
+}
+
+.modern-button:hover::before {
+  left: 100%;
+}
+
+.modern-button:hover {
+  background: var(--waze-blue-light);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg), var(--glow);
+}
+
+.modern-button:active {
+  transform: translateY(0);
+}
+
+.modern-button.secondary {
+  background: var(--button-secondary);
+  color: var(--text-primary);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.modern-button.secondary:hover {
+  background: var(--button-hover);
+  border-color: var(--waze-blue);
+}
+
+/* ---------- Modern Alerts & Notifications ---------- */
+.alert {
+  background: linear-gradient(135deg, rgba(255, 71, 87, 0.15), rgba(255, 71, 87, 0.08));
+  border: 1px solid rgba(255, 71, 87, 0.3);
+  color: #ffb3b8;
+  padding: var(--space-lg);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(10px);
+  margin: var(--space-md) 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.alert::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--error);
+}
+
+.alert.success {
+  background: linear-gradient(135deg, rgba(0, 212, 170, 0.15), rgba(0, 212, 170, 0.08));
+  border-color: rgba(0, 212, 170, 0.3);
+  color: #7fffd4;
+}
+
+.alert.success::before {
+  background: var(--success);
+}
+
+.alert.warning {
+  background: linear-gradient(135deg, rgba(255, 184, 0, 0.15), rgba(255, 184, 0, 0.08));
+  border-color: rgba(255, 184, 0, 0.3);
+  color: #fff4cc;
+}
+
+.alert.warning::before {
+  background: var(--warning);
+}
+
+/* ---------- Loading States & Animations ---------- */
+.loading-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: var(--waze-blue);
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ---------- Map Container Styling ---------- */
+.map-container {
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+iframe[title="st.iframe"] {
+  border-radius: var(--radius-lg);
+  border: none;
+}
+
+/* ---------- Responsive Design ---------- */
+@media (max-width: 768px) {
+  .floating-search-bar {
+    left: var(--space-md);
+    right: var(--space-md);
+    top: var(--space-md);
+  }
+  
+  .search-inputs {
+    grid-template-columns: 1fr;
+    gap: var(--space-sm);
+  }
+  
+  .search-divider {
+    display: none;
+  }
+  
+  .bottom-sheet {
+    left: var(--space-md);
+    right: var(--space-md);
+    bottom: var(--space-md);
+  }
+  
+  .bottom-sheet .content {
+    grid-template-columns: 1fr;
+    gap: var(--space-lg);
+    text-align: center;
+  }
+  
+  .bottom-sheet .eta-display {
+    text-align: center;
+  }
+  
+  .fabs {
+    right: var(--space-md);
+    bottom: 120px;
+  }
+  
+  .fab {
+    width: 48px;
+    height: 48px;
+  }
+}
+
+@media (max-width: 480px) {
+  .floating-search-bar {
+    padding: var(--space-sm);
+  }
+  
+  .bottom-sheet {
+    padding: var(--space-lg);
+  }
+  
+  .bottom-sheet .eta-time {
+    font-size: 24px;
+  }
+}

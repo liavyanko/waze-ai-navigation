@@ -1,0 +1,16 @@
+{% if error_type == "no_locations" %}
+<div class="alert warning" style="position: fixed; top: 120px; left: 20px; right: 20px; z-index: 1000;">
+    <strong>📍 Select Locations</strong><br>
+    Choose start and destination points to begin navigation
+</div>
+{% elif error_type == "no_start" %}
+<div class="alert warning" style="position: fixed; top: 120px; left: 20px; right: 20px; z-index: 1000;">
+    <strong>📍 Select Start Point</strong><br>
+    Choose your starting location to calculate the route
+</div>
+{% elif error_type == "no_end" %}
+<div class="alert warning" style="position: fixed; top: 120px; left: 20px; right: 20px; z-index: 1000;">
+    <strong>📍 Select Destination</strong><br>
+    Choose your destination to calculate the route
+</div>
+{% endif %}
