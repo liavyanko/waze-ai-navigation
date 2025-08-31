@@ -14,11 +14,6 @@ TEMPLATE_DIR = Path(__file__).parent.parent / "templates"
 template_loader = jinja2.FileSystemLoader(searchpath=str(TEMPLATE_DIR))
 template_env = jinja2.Environment(loader=template_loader)
 
-def render_search_bar(start_value: str = "", end_value: str = "") -> str:
-    """Render the floating search bar component"""
-    template = template_env.get_template("components/search_bar.html")
-    return template.render()
-
 def render_bottom_sheet(eta_minutes: Optional[float] = None, 
                        multiplier: Optional[float] = None, 
                        route_info: Optional[Dict] = None) -> str:
@@ -226,78 +221,6 @@ def render_error_messages(error_type: Optional[str] = None) -> str:
     
     template = template_env.get_template("components/error_messages.html")
     return template.render(error_type=error_type)
-
-def render_modern_search_with_autocomplete():
-    """Render the new modern search inputs with live autocomplete"""
-    template = template_env.get_template("components/search_inputs.html")
-    return template.render()
-
-def render_modern_search_inputs():
-    """Render modern search inputs with autocomplete integration"""
-    # Get current values
-    start_value = st.session_state.get("start_query", "")
-    end_value = st.session_state.get("end_query", "")
-    
-    # Start location input
-    col1, col2, col3 = st.columns([2, 1, 2])
-    with col1:
-        start_new = st.text_input(
-            "Start location", 
-            value=start_value,
-            key="start_query_modern",
-            placeholder="Start location"
-        )
-        if start_new != start_value:
-            st.session_state["start_query"] = start_new
-            # Trigger autocomplete
-            if len(start_new) >= 2:
-                from src.utils.utils import photon_autocomplete
-                suggestions = photon_autocomplete(start_new, limit=5)
-                st.session_state["start_suggestions"] = suggestions
-    
-    with col2:
-        st.markdown('<div class="search-divider"></div>', unsafe_allow_html=True)
-    
-    with col3:
-        end_new = st.text_input(
-            "Destination", 
-            value=end_value,
-            key="end_query_modern", 
-            placeholder="Destination"
-        )
-        if end_new != end_value:
-            st.session_state["end_query"] = end_new
-            # Trigger autocomplete
-            if len(end_new) >= 2:
-                from src.utils.utils import photon_autocomplete
-                suggestions = photon_autocomplete(end_new, limit=5)
-                st.session_state["end_suggestions"] = suggestions
-    
-    return start_new, end_new
-
-def render_autocomplete_suggestions():
-    """Render autocomplete suggestions for both inputs"""
-    # Show suggestions for start
-    if st.session_state.get("start_suggestions") and len(st.session_state["start_query"]) >= 2:
-        st.markdown('<div class="suggestion-list">', unsafe_allow_html=True)
-        for i, suggestion in enumerate(st.session_state["start_suggestions"]):
-            if st.button(f"📍 {suggestion['label']}", key=f"start_sugg_modern_{i}", use_container_width=True):
-                from src.utils.utils import _select_point
-                _select_point("start", suggestion["label"], suggestion["lat"], suggestion["lon"])
-                st.session_state["start_suggestions"] = []
-                st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
-    
-    # Show suggestions for end
-    if st.session_state.get("end_suggestions") and len(st.session_state["end_query"]) >= 2:
-        st.markdown('<div class="suggestion-list">', unsafe_allow_html=True)
-        for i, suggestion in enumerate(st.session_state["end_suggestions"]):
-            if st.button(f"📍 {suggestion['label']}", key=f"end_sugg_modern_{i}", use_container_width=True):
-                from src.utils.utils import _select_point
-                _select_point("end", suggestion["label"], suggestion["lat"], suggestion["lon"])
-                st.session_state["end_suggestions"] = []
-                st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
 
 def render_weather_controls():
     """Render the floating weather and context controls"""

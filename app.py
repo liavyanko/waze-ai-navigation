@@ -26,14 +26,11 @@ from src.config.config import (
 from src.models.normalized_eta_model import predict_travel_multiplier, predict_travel_with_details
 from src.services.traffic_manager import TrafficManager, TrafficConfig
 from src.components.ui_components import (
-    render_search_bar,
     render_bottom_sheet,
     render_floating_buttons,
     render_route_chips,
     render_route_chips_streamlit,
     render_error_messages,
-    render_modern_search_inputs,
-    render_autocomplete_suggestions,
     render_weather_controls
 )
 from src.components.traffic_ui import (
@@ -420,6 +417,8 @@ def _select_point(which: str, label: str, lat: float, lon: float):
     """Select a point and update session state."""
     st.session_state[f"{which}_point"] = {"label": label, "lat": lat, "lon": lon}
     st.session_state[f"{which}_pending_query"] = label
+    # Clear suggestions when a point is selected
+    st.session_state[f"{which}_suggestions"] = []
     _save_query_params()
     _safe_rerun()
 
@@ -569,7 +568,7 @@ def main():
                     st.session_state["start_suggestions"] = []
             
             # Show start suggestions
-            if st.session_state.get("start_suggestions") and len(st.session_state["start_query"]) >= 2:
+            if st.session_state.get("start_suggestions") and len(st.session_state.get("start_query", "")) >= 2:
                 for i, suggestion in enumerate(st.session_state["start_suggestions"]):
                     if st.button(
                         f"📍 {suggestion['label']}", 
@@ -578,6 +577,7 @@ def main():
                     ):
                         _select_point("start", suggestion["label"], suggestion["lat"], suggestion["lon"])
                         st.session_state["start_suggestions"] = []
+                        st.session_state["start_query"] = suggestion["label"]
                         st.rerun()
         
         with col2:
@@ -605,7 +605,7 @@ def main():
                     st.session_state["end_suggestions"] = []
             
             # Show end suggestions
-            if st.session_state.get("end_suggestions") and len(st.session_state["end_query"]) >= 2:
+            if st.session_state.get("end_suggestions") and len(st.session_state.get("end_query", "")) >= 2:
                 for i, suggestion in enumerate(st.session_state["end_suggestions"]):
                     if st.button(
                         f"🏁 {suggestion['label']}", 
@@ -614,6 +614,7 @@ def main():
                     ):
                         _select_point("end", suggestion["label"], suggestion["lat"], suggestion["lon"])
                         st.session_state["end_suggestions"] = []
+                        st.session_state["end_query"] = suggestion["label"]
                         st.rerun()
         
         # Search button row
@@ -621,31 +622,53 @@ def main():
         
         with col_btn2:
             if st.button("🔍 Find Route", key="search_route_btn", use_container_width=True):
+                # Check if we have both points or if we need to search for them
+                start_point = st.session_state.get("start_point")
+                end_point = st.session_state.get("end_point")
+                
+                # If we have text queries but no points, try to search for them
+                if not start_point and st.session_state.get("start_query"):
+                    result = nominatim_search(st.session_state["start_query"])
+                    if result:
+                        lat, lon, label = result
+                        _select_point("start", label, lat, lon)
+                
+                if not end_point and st.session_state.get("end_query"):
+                    result = nominatim_search(st.session_state["end_query"])
+                    if result:
+                        lat, lon, label = result
+                        _select_point("end", label, lat, lon)
+                
+                # Check final state
                 if st.session_state.get("start_point") and st.session_state.get("end_point"):
+                    # Clear all suggestions when route is found
+                    st.session_state["start_suggestions"] = []
+                    st.session_state["end_suggestions"] = []
                     st.success("Route calculation started!")
+                    st.rerun()
                 else:
                     st.warning("Please select both start and destination locations")
         
         st.markdown('</div>', unsafe_allow_html=True)
 
     # Get current points
-    sp = st.session_state.get("start_point")
-    ep = st.session_state.get("end_point")
-    
-    # Auto weather update
-    focus_lat = focus_lon = None
-    if sp and ep:
-        focus_lat, focus_lon = (sp["lat"] + ep["lat"]) / 2.0, (sp["lon"] + ep["lon"]) / 2.0
-    elif sp:
-        focus_lat, focus_lon = sp["lat"], sp["lon"]
-    elif ep:
-        focus_lat, focus_lon = ep["lat"], ep["lon"]
+        sp = st.session_state.get("start_point")
+        ep = st.session_state.get("end_point")
 
-    if st.session_state.get("weather_mode") == "auto" and focus_lat is not None:
-        wx = fetch_weather_auto(focus_lat, focus_lon)
-        st.session_state["last_weather"] = wx
-        if wx.get("category"):
-            st.session_state["weather_pending"] = wx["category"]
+    # Auto weather update
+        focus_lat = focus_lon = None
+        if sp and ep:
+            focus_lat, focus_lon = (sp["lat"] + ep["lat"]) / 2.0, (sp["lon"] + ep["lon"]) / 2.0
+        elif sp:
+            focus_lat, focus_lon = sp["lat"], sp["lon"]
+        elif ep:
+            focus_lat, focus_lon = ep["lat"], ep["lon"]
+
+        if st.session_state.get("weather_mode") == "auto" and focus_lat is not None:
+            wx = fetch_weather_auto(focus_lat, focus_lon)
+            st.session_state["last_weather"] = wx
+            if wx.get("category"):
+                st.session_state["weather_pending"] = wx["category"]
 
     # Initialize traffic manager
     traffic_manager = initialize_traffic_manager()
@@ -717,7 +740,7 @@ def main():
             _select_point("start", f"LatLng({lat:.4f},{lon:.4f})", lat, lon)
         elif mode == "end":
             _select_point("end", f"LatLng({lat:.4f},{lon:.4f})", lat, lon)
-    
+
     # Calculate ETA if we have both points
     if sp and ep:
         # Base time calculation
@@ -736,7 +759,7 @@ def main():
             traffic_data=traffic_conditions  # Pass live traffic data
         )
         multiplier = details["multiplier"]
-        
+
         # Final ETA
         final_minutes = (base_used or 0.0) * multiplier
         
